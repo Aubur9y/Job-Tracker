@@ -17,6 +17,7 @@ def main():
     logging.info(f"Location: {args.location}")
     logging.info(f"Days Posted: {args.days_posted}")
     logging.info(f"Radius: {args.radius}")
+    logging.info(f"Min Salary: {args.min_salary}")
     logging.info(f"Max Pages: {args.max_pages}")
     logging.info(f"Company Name: {args.company_name}")
 
@@ -26,7 +27,9 @@ def main():
         keyword=args.keyword,
         location=args.location,
         days_posted=args.days_posted,
-        radius=args.radius
+        radius=args.radius,
+        sort_by=args.sort_by,
+        min_salary=args.min_salary,
     )
 
     driver = initialize_driver(headless=config["HEADLESS"])

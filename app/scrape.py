@@ -19,7 +19,7 @@ def initialize_driver(browser="chrome", headless=True):
     driver = uc.Chrome(options=options)
     return driver
 
-def build_url(keyword=None, location=None, days_posted=None, radius=None, sort=None):
+def build_url(keyword=None, location=None, days_posted=None, radius=None, sort_by=None, min_salary=None):
     base_url = "https://uk.indeed.com/jobs?"
     params = []
 
@@ -31,8 +31,11 @@ def build_url(keyword=None, location=None, days_posted=None, radius=None, sort=N
         params.append(f"fromage={days_posted}")
     if radius:
         params.append(f"radius={radius}")
-    if sort == "date":
+    if sort_by == "date":
         params.append("sort=date")
+    if min_salary:
+        salary_param = f"£{min_salary:,}".replace(",", "%2C")
+        params.append(f"salaryType={salary_param}")
 
     return base_url + "&".join(params)
 
@@ -127,10 +130,10 @@ def scrape_job_listing(driver, url, max_pages=5, db=None, company_name_filter=No
                     salary, job_type, schedule = None, None, None
                     try:
                         metadata_items = job_card.find_elements(By.CSS_SELECTOR, '[data-testid="attribute_snippet_testid"]')
-                        salary = metadata_items[0].text if len(metadata_items) > 0 else "Not provided"
-                        job_type = metadata_items[1].text if len(metadata_items) > 1 else "Not provided"
-                        schedule = metadata_items[2].text if len(metadata_items) > 2 else "Not provided"
-                    except Exception:
+                        salary = next((item.text for item in metadata_items if "£" in item.text or "hour" in item.text or "day" in item.text or "month" in item.text or "year" in item.text), "Not provided")
+                        job_type = next((item.text for item in metadata_items if "Permanent" in item.text or "Contract" in item.text or "Temporary" in item.text), "Not provided")
+                        schedule = next((item.text for item in metadata_items if "Part-time" in item.text or "Full-time" in item.text or "Shift" in item.text), "Not provided")
+                    except Exception as e:
                         salary = job_type = schedule = "Not provided"
 
                     job_data = {

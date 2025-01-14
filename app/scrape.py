@@ -39,26 +39,6 @@ def build_url(keyword=None, location=None, days_posted=None, radius=None, sort_b
 
     return base_url + "&".join(params)
 
-def query_jobs(keyword=None, location=None, min_salary=None, max_salary=None):
-    client = MongoClient("mongodb+srv://auburyqx0215:Ww876973145@cluster0.0hv3r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", db_name="job_scraper", collection_name="jobs")
-    db = client["job_tracker"]
-    jobs_collection = db["jobs"]
-
-    query = {}
-    if keyword:
-        query["job_title"] = {"$regex": rf"\b{keyword}\b", "$options": "i"}
-    if location:
-        query["location"] = {"$regex": location, "$options": "i"}
-    if min_salary or max_salary:
-        query["salary_numeric"] = {}
-        if min_salary is not None:
-            query["salary_numeric"]["$gte"] = min_salary
-        if max_salary is not None:
-            query["salary_numeric"]["$lte"] = max_salary
-    
-    results = list(jobs_collection.find(query))
-    return results
-
 def parse_salary(salary):
     if salary:
         numbers = re.findall(r"[\d,]+", salary)

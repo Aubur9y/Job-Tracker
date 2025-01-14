@@ -1,37 +1,43 @@
 import logging
-from scrape import initialize_driver, scrape_job_listing
-from database import connect_to_mongo, query_jobs
+from app.scrape import initialize_driver, scrape_job_listing, build_url
+from app.database import connect_to_mongo
+from app.args import parse_arguments
+from app.config import load_config
+from app.display import display_jobs
 
 logging.basicConfig(level=logging.INFO)
 
 def main():
-    url = "https://uk.indeed.com/jobs?q=&l=london"
-    print(f"Scraping jobs from {url}")
-    keyword = "AI"
+    config = load_config()
 
-    uri = "mongodb+srv://auburyqx0215:Ww876973145@cluster0.0hv3r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    db = connect_to_mongo(uri=uri)
+    args = parse_arguments()
 
-    driver = initialize_driver(headless=False)
+    logging.info("Job Tracker Arguments:")
+    logging.info(f"Keyword: {args.keyword}")
+    logging.info(f"Location: {args.location}")
+    logging.info(f"Days Posted: {args.days_posted}")
+    logging.info(f"Radius: {args.radius}")
+    logging.info(f"Max Pages: {args.max_pages}")
+
+    db = connect_to_mongo(uri=config["MONGO_URI"])
+
+    url = build_url(
+        keyword=args.keyword,
+        location=args.location,
+        days_posted=args.days_posted,
+        radius=args.radius
+    )
+
+    driver = initialize_driver(headless=config["HEADLESS"])
 
     try:
         logging.info("Scraping job listings...")
-        scrape_job_listing(driver, url, max_pages=1, keyword=keyword, db=db)
+        scraped_jobs = scrape_job_listing(
+            driver, url, max_pages=args.max_pages, db=db
+        )
+        
+        display_jobs(scraped_jobs)
 
-        saved_jobs = query_jobs(db, "jobs", {"job_title": {"$regex": keyword, "$options": "i"}})
-        for job in saved_jobs:
-            print(job)
-
-    #     if job:
-    #         logging.info(f"Scraped {len(job)} job listings")
-    #         for i, job in enumerate(job, start=1):
-    #             print(f"\nJob {i}")
-    #             for key, value in job.items():
-    #                 print(f"{key.capitalize()}: {value}")
-    #     else:
-    #         logging.warning("No jobs listings found.")
-    # except Exception as e:
-    #     logging.error(f"Error scraping job listings: {e}")
     finally:
         driver.quit()
 

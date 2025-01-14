@@ -1,9 +1,11 @@
 import time
+import re
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from database import save_to_mongo
+from app.database import save_to_mongo
+from pymongo import MongoClient
 
 def initialize_driver(browser="chrome", headless=True):
     """
@@ -14,16 +16,58 @@ def initialize_driver(browser="chrome", headless=True):
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
-    # service = Service(r"E:\devtools\chromedriver-win64\chromedriver.exe")
-
-    # if browser == "chrome":
-    #     return webdriver.Chrome(service=service, options=options)
-    # else:
-    #     raise ValueError("Invalid browser")
     driver = uc.Chrome(options=options)
     return driver
+
+def build_url(keyword=None, location=None, days_posted=None, radius=None, sort=None):
+    base_url = "https://uk.indeed.com/jobs?"
+    params = []
+
+    if keyword:
+        params.append(f"q={keyword.replace(' ', '+')}")
+    if location:
+        params.append(f"l={location.replace(' ', '+')}")
+    if days_posted:
+        params.append(f"fromage={days_posted}")
+    if radius:
+        params.append(f"radius={radius}")
+    if sort == "date":
+        params.append("sort=date")
+
+    return base_url + "&".join(params)
+
+def query_jobs(keyword=None, location=None, min_salary=None, max_salary=None):
+    client = MongoClient("mongodb+srv://auburyqx0215:Ww876973145@cluster0.0hv3r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", db_name="job_scraper", collection_name="jobs")
+    db = client["job_tracker"]
+    jobs_collection = db["jobs"]
+
+    query = {}
+    if keyword:
+        query["job_title"] = {"$regex": rf"\b{keyword}\b", "$options": "i"}
+    if location:
+        query["location"] = {"$regex": location, "$options": "i"}
+    if min_salary or max_salary:
+        query["salary_numeric"] = {}
+        if min_salary is not None:
+            query["salary_numeric"]["$gte"] = min_salary
+        if max_salary is not None:
+            query["salary_numeric"]["$lte"] = max_salary
     
-def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None):
+    results = list(jobs_collection.find(query))
+    return results
+
+def parse_salary(salary):
+    if salary:
+        numbers = re.findall(r"[\d,]+", salary)
+        if len(numbers) == 2:  # if range provided
+            min_salary = int(numbers[0].replace(",", ""))
+            max_salary = int(numbers[1].replace(",", ""))
+            return (min_salary + max_salary) // 2
+        elif len(numbers) == 1:  # if single value provided
+            return int(numbers[0].replace(",", ""))
+    return None
+
+def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None, location_filter=None):
     """
     Scrape the job listing from the given URL.
     """
@@ -58,8 +102,8 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None):
                     # Extract job title
                     job_title = job_card.find_element(By.CLASS_NAME, "jobTitle").text
 
-                    if keyword and keyword.lower() not in job_title.lower():
-                        continue  # Skip jobs that don't match the keyword
+                    # if keyword and keyword.lower() not in job_title.lower():
+                    #     continue  # Skip jobs that don't match the keyword
 
                     # Extract job link
                     job_link = job_card.find_element(By.TAG_NAME, "a").get_attribute("href")
@@ -79,14 +123,11 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None):
                     salary, job_type, schedule = None, None, None
                     try:
                         metadata_items = job_card.find_elements(By.CSS_SELECTOR, '[data-testid="attribute_snippet_testid"]')
-                        if len(metadata_items) > 0:
-                            salary = metadata_items[0].text  # First metadata item
-                        if len(metadata_items) > 1:
-                            job_type = metadata_items[1].text  # Second metadata item
-                        if len(metadata_items) > 2:
-                            schedule = metadata_items[2].text  # Third metadata item
-                    except:
-                        pass
+                        salary = metadata_items[0].text if len(metadata_items) > 0 else "Not provided"
+                        job_type = metadata_items[1].text if len(metadata_items) > 1 else "Not provided"
+                        schedule = metadata_items[2].text if len(metadata_items) > 2 else "Not provided"
+                    except Exception:
+                        salary = job_type = schedule = "Not provided"
 
                     job_data = {
                         "job_title": job_title,
@@ -94,8 +135,9 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None):
                         "company_name": company_name,
                         "location": location,
                         "salary": salary,
+                        # "salary_numeric": parse_salary(salary),
                         "job_type": job_type,
-                        "schedule": schedule,  # Add schedule here
+                        "schedule": schedule,
                     }
 
                     if db is not None:  # Explicit comparison

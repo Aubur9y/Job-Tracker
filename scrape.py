@@ -3,6 +3,7 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from database import save_to_mongo
 
 def initialize_driver(browser="chrome", headless=True):
     """
@@ -22,7 +23,7 @@ def initialize_driver(browser="chrome", headless=True):
     driver = uc.Chrome(options=options)
     return driver
     
-def scrape_job_listing(driver, url, max_pages=5, keyword=None):
+def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None):
     """
     Scrape the job listing from the given URL.
     """
@@ -100,6 +101,10 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None):
                 except Exception as e:
                     print(f"Error while scraping a job card: {e}")
                     continue  # Move to the next job card
+
+            if db is not None:
+                save_to_mongo(db, "jobs", job_listings)
+                print(f"Saved {len(job_listings)} job listings to MongoDB")
             
             try:
                 next_button = WebDriverWait(driver, 10).until(

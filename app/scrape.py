@@ -43,6 +43,8 @@ def initialize_driver(browser="chrome", headless=True, proxy=None):
     # Enable browser debugging (optional)
     options.add_argument("--remote-debugging-port=9222")
 
+    options.binary_location = "/usr/bin/google-chrome"
+
     # Launch the driver
     driver = uc.Chrome(options=options)
 

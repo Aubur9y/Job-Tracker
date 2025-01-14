@@ -1,4 +1,13 @@
-**/*.env
-*.pyc
+# Ignore Python cache
 __pycache__/
-**/test.py
+*.pyc
+
+# Ignore virtual environment
+venv/
+
+# Ignore environment files
+.env
+
+# Ignore OS-specific files
+*.DS_Store
+Thumbs.db

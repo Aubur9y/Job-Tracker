@@ -1,22 +1,58 @@
 import time
 import re
 import undetected_chromedriver as uc
+import random
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from app.database import save_to_mongo
 from pymongo import MongoClient
+from fake_useragent import UserAgent
 
-def initialize_driver(browser="chrome", headless=True):
+def initialize_driver(browser="chrome", headless=True, proxy=None):
     """
-    Initialize the Selenium WebDriver.
+    Initialize the Selenium WebDriver with anti-bot features.
     """
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+    ]
+
     options = uc.ChromeOptions()
+    ua_string = random.choice(user_agents)
+    options.add_argument(f"user-agent={ua_string}")
+    print(f"Using User-Agent: {ua_string}")
+
+    # Headless mode settings
     if headless:
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
+
+    # Proxy support
+    if proxy:
+        options.add_argument(f"--proxy-server={proxy}")
+
+    # Add extra headers to mimic real user behavior
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-extensions")
+    options.add_argument("--disable-infobars")
+    options.add_argument("--disable-dev-shm-usage")
+
+    # Enable browser debugging (optional)
+    options.add_argument("--remote-debugging-port=9222")
+
+    # Launch the driver
     driver = uc.Chrome(options=options)
+
+    # Inject additional headers
+    headers = {
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.google.com/",
+    }
+    driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": headers})
+
     return driver
 
 def build_url(keyword=None, location=None, days_posted=None, radius=None, sort_by=None, min_salary=None):

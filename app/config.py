@@ -1,7 +1,9 @@
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 def load_config():
     return {
-        "MONGO_URI": os.getenv("MONGO_URI", "mongodb+srv://auburyqx0215:Ww876973145@cluster0.0hv3r.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"),
+        "MONGO_URI": os.getenv("MONGO_URI"),
         "HEADLESS": False,
     }

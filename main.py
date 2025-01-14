@@ -18,6 +18,7 @@ def main():
     logging.info(f"Days Posted: {args.days_posted}")
     logging.info(f"Radius: {args.radius}")
     logging.info(f"Max Pages: {args.max_pages}")
+    logging.info(f"Company Name: {args.company_name}")
 
     db = connect_to_mongo(uri=config["MONGO_URI"])
 
@@ -33,7 +34,7 @@ def main():
     try:
         logging.info("Scraping job listings...")
         scraped_jobs = scrape_job_listing(
-            driver, url, max_pages=args.max_pages, db=db
+            driver, url, max_pages=args.max_pages, db=db, company_name_filter=args.company_name
         )
         
         display_jobs(scraped_jobs)

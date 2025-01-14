@@ -67,7 +67,7 @@ def parse_salary(salary):
             return int(numbers[0].replace(",", ""))
     return None
 
-def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None, location_filter=None):
+def scrape_job_listing(driver, url, max_pages=5, db=None, company_name_filter=None, **filters):
     """
     Scrape the job listing from the given URL.
     """
@@ -84,7 +84,7 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None, location
             accept_button.click()
             print("Cookie banner accepted.")
         except Exception as e:
-            print(f"No cookie banner found or already accepted: {e}")
+            pass
 
     except Exception as e:
         print(f"Error handling cookie banner: {e}")
@@ -102,23 +102,27 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None, location
                     # Extract job title
                     job_title = job_card.find_element(By.CLASS_NAME, "jobTitle").text
 
-                    # if keyword and keyword.lower() not in job_title.lower():
-                    #     continue  # Skip jobs that don't match the keyword
-
-                    # Extract job link
-                    job_link = job_card.find_element(By.TAG_NAME, "a").get_attribute("href")
-
                     # Extract company name
                     try:
                         company_name = job_card.find_element(By.CSS_SELECTOR, '[data-testid="company-name"]').text
                     except:
-                        company_name = None
+                        company_name = "Not provided"
+
+                    if company_name_filter is not None:
+                        if company_name and company_name_filter.lower() not in (company_name or "").lower():
+                            continue
+
+                    # Extract job link
+                    try:
+                        job_link = job_card.find_element(By.TAG_NAME, "a").get_attribute("href")
+                    except:
+                        job_link = "Not provided"
 
                     # Extract location
                     try:
                         location = job_card.find_element(By.CSS_SELECTOR, '[data-testid="text-location"]').text
                     except:
-                        location = None
+                        location = "Not provided"
 
                     salary, job_type, schedule = None, None, None
                     try:
@@ -131,8 +135,8 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None, location
 
                     job_data = {
                         "job_title": job_title,
-                        "job_link": job_link,
                         "company_name": company_name,
+                        "job_link": job_link,
                         "location": location,
                         "salary": salary,
                         # "salary_numeric": parse_salary(salary),
@@ -162,6 +166,6 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None, location
         
         except Exception as e:
             print(f"Error while scraping job listings: {e}")
-            return []
+            break
         
     return job_listings

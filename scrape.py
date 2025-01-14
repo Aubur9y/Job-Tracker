@@ -88,23 +88,23 @@ def scrape_job_listing(driver, url, max_pages=5, keyword=None, db=None):
                     except:
                         pass
 
-                    # Append job details to the list
-                    job_listings.append({
+                    job_data = {
                         "job_title": job_title,
                         "job_link": job_link,
                         "company_name": company_name,
                         "location": location,
                         "salary": salary,
                         "job_type": job_type,
-                        "schedule": schedule,
-                    })
+                        "schedule": schedule,  # Add schedule here
+                    }
+
+                    if db is not None:  # Explicit comparison
+                        save_to_mongo(db, "jobs", job_data)  # Save to MongoDB with deduplication
+                    job_listings.append(job_data)
+                    
                 except Exception as e:
                     print(f"Error while scraping a job card: {e}")
                     continue  # Move to the next job card
-
-            if db is not None:
-                save_to_mongo(db, "jobs", job_listings)
-                print(f"Saved {len(job_listings)} job listings to MongoDB")
             
             try:
                 next_button = WebDriverWait(driver, 10).until(

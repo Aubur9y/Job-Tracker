@@ -20,16 +20,14 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
 RUN groupadd -g 1000 airflow || true
 
 # Install ChromeDriver in a user-writable directory
-RUN CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
-    mkdir -p /home/airflow/.local/bin && \
-    wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip && \
-    unzip -o /tmp/chromedriver.zip -d /home/airflow/.local/bin && \
-    chmod +x /home/airflow/.local/bin/chromedriver && \
-    chmod g+w /home/airflow/.local/bin/chromedriver && \
-    chown airflow:airflow /home/airflow/.local/bin/chromedriver && \
-    rm /tmp/chromedriver.zip && \
+RUN CHROMEDRIVER_VERSION=132.0.6834.83 && \
+    wget -q -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/132.0.6834.83/linux64/chromedriver-linux64.zip && \
+    unzip -o /tmp/chromedriver.zip -d /tmp/ && \
+    mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64 && \
     echo "Installed ChromeDriver version:" && \
-    /home/airflow/.local/bin/chromedriver --version
+    /usr/local/bin/chromedriver --version
 
 # Add the directory to PATH
 ENV PATH="/home/airflow/.local/bin:${PATH}"

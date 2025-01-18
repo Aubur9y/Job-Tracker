@@ -53,7 +53,7 @@ def initialize_driver(browser="chrome", headless=True, proxy=None):
     try:
         driver = uc.Chrome(
             options=options,
-            driver_executable_path="/home/airflow/.local/bin/chromedriver",
+            driver_executable_path="/usr/local/bin/chromedriver",
             patcher_force_close=True  # Force close existing ChromeDriver processes
         )
     except Exception as e:

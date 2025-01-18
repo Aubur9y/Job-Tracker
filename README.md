@@ -7,6 +7,6 @@ TODOs:
 2. Enable the user to customize parameters without using the command line or modifying the code directly
 3. Clean up redundant code and optimize project structure
 4. Bypass human verification (not sure how to do this yet)
-5. Dockerize the code
+5. Switch to airflow and dockerize the code (Ongoing)
 6. Other job sites (LinkedIn, Glassdoor etc.)
 7. Integrate RAG (extract user intention from sentences)

@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from app.database import save_to_mongo
 from pymongo import MongoClient
 from fake_useragent import UserAgent
+import logging
 
 def initialize_driver(browser="chrome", headless=True, proxy=None):
     """
@@ -45,8 +46,19 @@ def initialize_driver(browser="chrome", headless=True, proxy=None):
 
     options.binary_location = "/usr/bin/google-chrome"
 
+    # Enable logging for undetected_chromedriver
+    logging.basicConfig(level=logging.DEBUG)
+
     # Launch the driver
-    driver = uc.Chrome(options=options)
+    try:
+        driver = uc.Chrome(
+            options=options,
+            driver_executable_path="/home/airflow/.local/bin/chromedriver",
+            patcher_force_close=True  # Force close existing ChromeDriver processes
+        )
+    except Exception as e:
+        print(f"Failed to initialize WebDriver: {e}")
+        raise
 
     # Inject additional headers
     headers = {

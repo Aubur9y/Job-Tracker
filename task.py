@@ -3,7 +3,7 @@ from celery.utils.log import get_task_logger
 from app.scrape import scrape_job_listing
 from app.database import connect_to_mongo
 from app.config import load_config
-from telegram_notifier import send_telegram_message
+from airflow.plugins.telegram_notifier import send_telegram_message
 from app.scrape import initialize_driver
 from app.database import save_to_mongo
 
